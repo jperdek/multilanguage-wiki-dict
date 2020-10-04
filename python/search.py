@@ -87,7 +87,7 @@ class SearchTFIDF:
 
 
 search_tf_idf = SearchTFIDF()
-search_tf_idf.initialize('end_regex.json', ['tf_idf_file.json'], ['cs', 'sk', 'en'], 'sk')
+search_tf_idf.initialize('end_regex.json', ['sk_tf_idf_file.json', 'cs_tf_idf_file.json'], ['cs', 'sk', 'en'], 'sk')
 search_tf_idf.search("Metafyzika rozumom")
 
 

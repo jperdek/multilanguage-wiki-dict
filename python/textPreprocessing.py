@@ -122,7 +122,7 @@ class Lemmatization():
             if word not in stop_words_from_file and len(word) > 2 and word.isalpha():
                 for majka in self.chosen_majkas:
                     word_Final = majka.find(word)#word_Lemmatized.lemmatize(word, self.tag_map[tag[0]])
-                    if len(word_Final) > 0 :
+                    if len(word_Final) > 0:
                         lemmatized_words.append(word_Final[0]['lemma'])
 
         return separate_with_space(lemmatized_words)

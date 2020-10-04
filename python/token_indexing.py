@@ -48,6 +48,7 @@ class TdIdfOperations:
     def __init__(self):
         self.term_indexes = {}
         self.doc_indexes = {}
+        self.number_of_docs = 0
 
     def prepare_index_file(self, index_file):
         with open(index_file, encoding="utf-8") as index_file:
@@ -60,6 +61,7 @@ class TdIdfOperations:
     def initialize_indexes(self, doc_indexes, term_indexes, language_shortening):
         self.term_indexes[language_shortening] = term_indexes[language_shortening]
         self.doc_indexes[language_shortening] = doc_indexes[language_shortening]
+        self.number_of_docs = term_indexes[language_shortening + "_docs"]
 
     def normalize_array(self, array):
         sum_of_square_roots = 0.0
@@ -104,44 +106,39 @@ class TdIdfOperations:
                             tf_idf_output[i][doc] = 0.0
                         tf_idf_output[i][doc] = tf_idf_output[i][doc] + self.count_TF_IDF_for_term(term_frequency_in_doc, frequency_of_terms_in_doc, number_of_docs, number_of_docs_with_term)
 
-    def count_TF_IDF_from_indexes(self, language_shortenings, end_index_file_tf_idf):
-        term = ""
-        term_record = ""
-        doc_identifier = ""
+    def count_TF_IDF_from_indexes(self, language_shortening, end_index_file_tf_idf):
         tf_idf_output = {}
-        # number_of_docs = term_record[language_shortening + "_docs"]
-        number_of_docs = 62168 #for cz only
-        terms = list(self.term_indexes[language_shortenings[0]].keys())
+        terms = list(self.term_indexes[language_shortening].keys())
 
         for i in range(len(terms)):
             term = terms[i]
-            for language_shortening in language_shortenings:
-                if term in self.term_indexes[language_shortening]:
-                    term_record = self.term_indexes[language_shortening][term]
+            if term in self.term_indexes[language_shortening]:
+                term_record = self.term_indexes[language_shortening][term]
 
-                    for doc_identifier, term_frequency_in_doc in term_record['doc'].items():
-                        frequency_of_terms_in_doc = self.doc_indexes[language_shortening][doc_identifier]
-                        #number_of_docs = term_record[language_shortening + "_docs"]
-                        number_of_docs_with_term = term_record['df']
+                for doc_identifier, term_frequency_in_doc in term_record['doc'].items():
+                    frequency_of_terms_in_doc = self.doc_indexes[language_shortening][doc_identifier]
+                    #number_of_docs = term_record[language_shortening + "_docs"]
+                    number_of_docs_with_term = term_record['df']
 
-                        if term not in tf_idf_output:
-                            tf_idf_output[term] = {}
-                        if doc_identifier not in tf_idf_output[term]:
-                            tf_idf_output[term][doc_identifier] = 0
+                    if term not in tf_idf_output:
+                        tf_idf_output[term] = {}
+                    if doc_identifier not in tf_idf_output[term]:
+                        tf_idf_output[term][doc_identifier] = 0
 
-                        tf_idf_output[term][doc_identifier] = round(tf_idf_output[term][doc_identifier]
-                            + self.count_TF_IDF_for_term(term_frequency_in_doc, frequency_of_terms_in_doc,
-                                                         number_of_docs, number_of_docs_with_term), 6)
+                    tf_idf_output[term][doc_identifier] = round(tf_idf_output[term][doc_identifier]
+                           + self.count_TF_IDF_for_term(term_frequency_in_doc, frequency_of_terms_in_doc,
+                                                self.number_of_docs, number_of_docs_with_term), 6)
 
         with open(end_index_file_tf_idf, "w", encoding="utf-8") as f:
             f.write(json.dumps(tf_idf_output))
 
-    def make_td_idf_file(self, doc_index_file, term_indexes_file, language_shortening, end_index_file_tf_idf):
+    def make_tf_idf_file(self, doc_index_file, term_indexes_file, language_shortening, end_index_file_tf_idf):
 
         self.initialize(doc_index_file, term_indexes_file, language_shortening)
-        self.count_TF_IDF_from_indexes([language_shortening], end_index_file_tf_idf)
+        self.count_TF_IDF_from_indexes(language_shortening, end_index_file_tf_idf)
 
 
 if __name__ == "__main__":
     td_idf_operations = TdIdfOperations()
-    td_idf_operations.make_td_idf_file('cdDocIndexes.json', 'csIndexes.json', 'cs', 'tf_idf_file.json')
+    td_idf_operations.make_tf_idf_file('cdDocIndexes.json', 'csIndexes.json', 'cs', 'cs_tf_idf_file.json')
+    td_idf_operations.make_tf_idf_file('skDocIndexes.json', 'skIndexes.json', 'sk', 'sk_tf_idf_file.json')
