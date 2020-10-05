@@ -43,7 +43,7 @@ class XMLHandler(xml.sax.ContentHandler):
 
             #if self.occurences == 200:
             #    self.indexes[self.language_shortening + "_docs"] = len(self.docs_set)
-            #   with open(self.term_end_file, "w") as f:
+            #    with open(self.term_end_file, "w") as f:
             #        f.write(json.dumps(self.indexes))  # FINAL DUMPING
             #    with open(self.doc_end_file, "w") as f:
             #        f.write(json.dumps(self.doc_freq_index))  # FINAL DUMPING
@@ -71,7 +71,7 @@ class XMLHandler(xml.sax.ContentHandler):
 
         if self.currentData == 'text' and self.prepared_for_indexing:
             self.page_content = self.lemmatizer.lemmatization_and_stop_words_removal_not_included\
-                (textPreprocessing.tokenize_text(content), 'stop_words/sk_stop_words.json')
+                (textPreprocessing.tokenize_text(content), 'stop_words/en_stop_words.json')
             #print(self.document_identifier+ "< >"+str(len(content)))
             if self.page_content != "":
                self.text_content = self.text_content + self.page_content
@@ -125,5 +125,5 @@ def prepare_json_for_indexing(mapping_file, language_file, mapping_file_language
 
 if __name__ == "__main__" :
     #prepare_json_for_indexing('end_regex.json', 'D://wiki/cswiki-20200901-pages-articles-multistream.xml', "sk", ["cs"], 'csIndexes.json', 'csDocIndexes.json')
-    prepare_json_for_indexing('end_regex.json', 'D://wiki/skwiki-20200901-pages-articles-multistream.xml', "sk", ["sk"], 'skIndexes.json', 'skDocIndexes.json')
-    #prepare_json_for_indexing('end_regex.json', 'D://wiki/skwiki-20200901-pages-articles-multistream.xml', "sk", ["en"], 'enIndexes.json', 'enDocIndexes.json')
+    #prepare_json_for_indexing('end_regex.json', 'D://wiki/skwiki-20200901-pages-articles-multistream.xml', "sk", ["sk"], 'skIndexes.json', 'skDocIndexes.json')
+    prepare_json_for_indexing('end_regex.json', 'D://wiki/enwiki-20200901-pages-articles-multistream.xml', "sk", ["en"], 'enIndexes.json', 'enDocIndexes.json')
