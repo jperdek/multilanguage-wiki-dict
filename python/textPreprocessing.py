@@ -127,6 +127,18 @@ class Lemmatization():
 
         return separate_with_space(lemmatized_words)
 
+    def lemmatization_and_loaded_stop_words_removal_in_array(self, tokenized_text, stop_words):
+        lemmatized_words = []
+
+        for word, tag in pos_tag(tokenized_text):
+            if word not in stop_words and len(word) > 2 and word.isalpha():
+                word_Final = self.majka.find(word)  # word_Lemmatized.lemmatize(word, self.tag_map[tag[0]])
+
+                if len(word_Final) > 0:
+                    lemmatized_words.append(word_Final[0]['lemma'])
+
+        return separate_with_space(lemmatized_words)
+
 
 def create_tfidf_vectorizer(file_name, stop_words_language):
     tf_idf_vectorizer = TfidfVectorizer(stop_words=stop_words_language, max_df=0.7)

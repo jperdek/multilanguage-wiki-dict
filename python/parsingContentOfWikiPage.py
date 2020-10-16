@@ -88,6 +88,12 @@ class XMLHandler(xml.sax.ContentHandler):
             f.write(json.dumps(self.doc_freq_index))     #FINAL DUMPING
 
 
+# Prepares a title dict for specific language
+#    - obtained titles in next xml processing can be compared to find out if mapping exists for them
+#    mapping file - name of file with language mappings
+#    file_language_shortening - language shortening for origin language for which mapping is originated
+#    dest_language_shortening - array of other languages - only one language shortening should be provided
+#                             - this language must be same as language provided in language_file
 def prepare_titles(mapping_file, file_language_shortening, dest_language_shortenings):
     title_indexes = {}
     for dest_language_shortening in dest_language_shortenings:
@@ -102,10 +108,21 @@ def prepare_titles(mapping_file, file_language_shortening, dest_language_shorten
                     title_indexes[dest_language_shortening][record['title']] = record['id']
                 elif dest_language_shortening in record:
                     title_indexes[dest_language_shortening][record[dest_language_shortening]] = record['id']
+
     return title_indexes
 
 
-def prepare_json_for_indexing(mapping_file, language_file, mapping_file_language_shortening, language_array_shortenings, term_end_file, doc_end_file):
+# Starts parsing xml file
+#    mapping file - name of file with language mappings
+#    language file - file which should be processed - in certain language
+#                   -mappings must be created for it first!!!
+#    mapping_file_language_shortening - language shortening for origin language for which mapping is originated
+#    language_array_shortenings - array of other languages - only one language shortening should be provided
+#                               - this language must be same as language provided in language_file
+#    term_end_file - title for end file for tokens including associated docs with frequency for them
+#    doc_end_file  - title for end file for doc length
+def prepare_json_for_indexing(mapping_file, language_file, mapping_file_language_shortening, language_array_shortenings,
+                              term_end_file, doc_end_file):
     titles_indexes = prepare_titles(mapping_file, mapping_file_language_shortening, language_array_shortenings)
 
     indexes = {}
@@ -123,7 +140,24 @@ def prepare_json_for_indexing(mapping_file, language_file, mapping_file_language
 
     parser.parse(language_file)
 
+
+# loads partially divided files
+def partial_load(start_index, end_index, source_language_shortening, language_shortening, language_file):
+
+    for number in range(start_index, end_index + 1):
+        addition = ""
+        addition = addition + str(number)
+        prepare_json_for_indexing('end_regex.json', language_file + '' + addition + '.xml', source_language_shortening,
+                                  [language_shortening],
+                                  'partial/' + addition + '_' + language_shortening + 'Indexes.json', 'partial/' +
+                                  addition + '_' + language_shortening +'DocIndexes.json')
+
 if __name__ == "__main__" :
+    #PROCESSING OF EACH LANGUAGE WIKIPEDIA FILE
     #prepare_json_for_indexing('end_regex.json', 'D://wiki/cswiki-20200901-pages-articles-multistream.xml', "sk", ["cs"], 'csIndexes.json', 'csDocIndexes.json')
     #prepare_json_for_indexing('end_regex.json', 'D://wiki/skwiki-20200901-pages-articles-multistream.xml', "sk", ["sk"], 'skIndexes.json', 'skDocIndexes.json')
-    prepare_json_for_indexing('end_regex.json', 'D://wiki/enwiki-20200901-pages-articles-multistream.xml', "sk", ["en"], 'enIndexes.json', 'enDocIndexes.json')
+    #prepare_json_for_indexing('end_regex.json', 'D://wiki/enwiki-20200901-pages-articles-multistream.xml', "sk", ["en"], 'enIndexes.json', 'enDocIndexes.json')
+
+    #PARTIAL PROCESSING OF FILE - FILE MUST BE TRIMMED
+    #partial_load(0, 206,'sk', 'en', 'D:/wiki/tempexamples')
+    partial_load(43, 206,'sk', 'en', 'D:/wiki/tempexamples')
