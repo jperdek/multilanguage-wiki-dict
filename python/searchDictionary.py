@@ -33,13 +33,13 @@ class FindInDictionary:
         print(text)
         return textPreprocessing.tokenize_text(text)
 
-
     def find_foreign_equivalents(self, text, initial_language_shortening, dest_language_shortenings):
         results = dict()
         for language_shortening in dest_language_shortenings:
             results[language_shortening] = ""
 
-        tokens = textPreprocessing.tokenize_text(text) # self.do_text_preprocessing(text, initial_language_shortening)
+        tokens = textPreprocessing.tokenize_text(text)
+        # self.do_text_preprocessing(text, initial_language_shortening)
 
         for token in tokens:
             result_part_dict = self.character_trees[initial_language_shortening].find_word_more_languages(
@@ -60,8 +60,7 @@ class FindInDictionary:
             majka_lemmatizer = textPreprocessing.Lemmatization()
             majka_lemmatizer.majka_init_for_lemmatization(language_shortening)
             majka_lemmatizers[language_shortening] = majka_lemmatizer
-            majka_lemmatizers[language_shortening].lemmatization_and_stop_words_removal_in_array(
-                "fegyegfye", ['sd', 'sdsds'])
+
         return majka_lemmatizers
 
 if __name__ == "__main__" :

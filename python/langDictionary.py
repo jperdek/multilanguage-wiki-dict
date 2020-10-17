@@ -85,6 +85,7 @@ class CharacterTree:
         self.add_words_pairs({"name": "blame"}, 'en')
         self.add_words_pairs({"nama": "lama"}, 'en')
         self.add_words_pairs({"nail": "ame"}, 'en')
+        self.add_words_pairs({"kraľovať": "king"}, 'en')
         if self.find_word('name', 'en') != 'blame':
             print("Error test failed on word blame!")
             failed = True
@@ -94,22 +95,25 @@ class CharacterTree:
         if self.find_word('nama', 'en') != 'lama':
             print("Error test failed on word nama!")
             failed = True
+        if self.find_word('kraľovať', 'en') != 'king':
+            print("Error test failed on word nama!")
+            failed = True
 
         if not failed:
             print("Test succeed!")
 
     def save_as_json(self, file_name):
-        with open(file_name, "w") as f:
+        with open(file_name, "w", encoding='utf-8') as f:
             f.write(json.dumps(self.root_node))  # FINAL DUMPING
 
     def load_as_json(self, file_name, language_shortening):
         self.tree_language_shortening = language_shortening
-        with open(file_name, "r") as f:
+        with open(file_name, "r", encoding='utf-8') as f:
             self.root_node = json.load(f)
 
 
 def load_json_file(lang_connection_file):
-    with open(lang_connection_file, "r") as file:
+    with open(lang_connection_file, "r", encoding='utf-8') as file:
         return json.load(file)
 
 
@@ -256,7 +260,7 @@ def create_sk_lang_character_tree(lang_connection_file):
 
 # creates character tree for various languages and tokens
 if __name__ == "__main__":
-    # test_character_tree()
+    test_character_tree()
     # create_sk_lang_character_tree('end_regex.json')
-    create_dictionaries('end_regex.json', 'sk', ['en', 'sk', 'cs'])
+    #create_dictionaries('end_regex.json', 'sk', ['en', 'sk', 'cs'])
 
