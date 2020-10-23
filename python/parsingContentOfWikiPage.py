@@ -3,11 +3,14 @@ import json
 import re
 from python import textPreprocessing, token_indexing
 import copy
-import sys
 
+
+# Class used to parse content of wiki pages using SAX parser
 class XMLHandler(xml.sax.ContentHandler):
 
+    # Initialization of parsing of wiki page
     def __init__(self):
+        super().__init__()
         self.currentData = ""
         self.occurences = 0
         self.on_page_to_do = False
@@ -15,18 +18,29 @@ class XMLHandler(xml.sax.ContentHandler):
         self.lemmatizer = textPreprocessing.Lemmatization()
         self.page_content = ""
         self.docs_set = set()
-
         self.document_identifier = ""
         self.lang_document_identifier = ""
         self.text_content = ""
         self.indexes = None
         self.doc_freq_index = None
+        self.language_indexes = {}
+        self.language_shortening = "sk"
+        self.term_end_file = None
+        self.doc_end_file = None
+        self.titles_indexes = None
 
-    def setIndexes(self, indexes):
+    # Sets indexes to class content
+    # indexes       - indexes to set
+    def set_indexes(self, indexes):
         self.indexes = indexes
         self.doc_freq_index = copy.deepcopy(indexes)
 
-    def setJSON(self, titles_indexes, language_shortening, term_end_file, doc_end_file):
+    # Sets JSON file
+    # titles_indexes            - indexes of titles, connection file
+    # language_shortening       - base language for language connection
+    # term_end_file             - end file for storing indexes from terms
+    # doc_end_file              - end file for storing documents length
+    def set_json(self, titles_indexes, language_shortening, term_end_file, doc_end_file):
         self.titles_indexes = titles_indexes
         self.language_shortening = language_shortening
         self.language_indexes = []
@@ -34,6 +48,9 @@ class XMLHandler(xml.sax.ContentHandler):
         self.doc_end_file = doc_end_file
         self.lemmatizer.majka_init_for_lemmatization(language_shortening)
 
+    # Initializes or nulls variables when new page is accessed
+    # tag           - start tag name
+    # attributes    - attributes of element
     def startElement(self, tag, attributes):
         self.currentData = tag
         if tag == 'page':
@@ -41,7 +58,7 @@ class XMLHandler(xml.sax.ContentHandler):
             self.on_page_to_do = True
             self.text_content = ""
 
-            #if self.occurences == 200:
+            # if self.occurences == 200:
             #    self.indexes[self.language_shortening + "_docs"] = len(self.docs_set)
             #    with open(self.term_end_file, "w") as f:
             #        f.write(json.dumps(self.indexes))  # FINAL DUMPING
@@ -52,40 +69,45 @@ class XMLHandler(xml.sax.ContentHandler):
             if self.occurences % 100 == 0:
                 print(self.occurences)
 
+    # If end element is page than it preprocessed text if any and adds it to indexes
+    # tag       - end tag name
     def endElement(self, tag):
         if tag == 'page':
             self.prepared_for_indexing = False
             if self.text_content != "":
                 self.docs_set.add(self.document_identifier)
                 token_indexing.index_words_term_freq_doc_freq(self.indexes, self.doc_freq_index, self.text_content,
-                                                              self.document_identifier,
-                                                              self.lang_document_identifier, self.language_shortening)
+                                                              self.document_identifier, self.language_shortening)
         self.currentData = ""
 
+    # Preprocessing of page content of connected pages
+    # Can be called multiple times on one tag content!!!
+    # content       - content between tags
     def characters(self, content):
-        if self.currentData == "title" and self.on_page_to_do and re.search("^MediaWiki:", content) == None:
+        if self.currentData == "title" and self.on_page_to_do and re.search(r"^MediaWiki:", content) is None:
             if content in self.titles_indexes[self.language_shortening]:
                 self.document_identifier = str(self.titles_indexes[self.language_shortening][content])
                 self.lang_document_identifier = self.language_shortening + "-" + self.document_identifier
                 self.prepared_for_indexing = True
 
         if self.currentData == 'text' and self.prepared_for_indexing:
-            self.page_content = self.lemmatizer.lemmatization_and_stop_words_removal_not_included\
-                (textPreprocessing.tokenize_text(content), 'stop_words/en_stop_words.json')
-            #print(self.document_identifier+ "< >"+str(len(content)))
+            self.page_content = self.lemmatizer.lemmatization_and_stop_words_removal_not_included(
+                textPreprocessing.tokenize_text(content), 'stop_words/en_stop_words.json')
+            # print(self.document_identifier+ "< >"+str(len(content)))
             if self.page_content != "":
-               self.text_content = self.text_content + self.page_content
+                self.text_content = self.text_content + self.page_content
 
+    # Saves indexes content to separate JSON files
     def endDocument(self):
         print("Occurences: "+str(self.occurences))
 
         self.indexes[self.language_shortening + "_docs"] = len(self.docs_set)
 
-        #SAVE AS JSON FILE
+        # SAVE AS JSON FILE
         with open(self.term_end_file, "w") as f:
-            f.write(json.dumps(self.indexes))     #FINAL DUMPING
+            f.write(json.dumps(self.indexes))     # FINAL DUMPING
         with open(self.doc_end_file, "w") as f:
-            f.write(json.dumps(self.doc_freq_index))     #FINAL DUMPING
+            f.write(json.dumps(self.doc_freq_index))     # FINAL DUMPING
 
 
 # Prepares a title dict for specific language
@@ -132,11 +154,11 @@ def prepare_json_for_indexing(mapping_file, language_file, mapping_file_language
 
     parser = xml.sax.make_parser()
     parser.setFeature(xml.sax.handler.feature_namespaces, 0)
-    xmlHandler = XMLHandler()
-    xmlHandler.setJSON(titles_indexes, language_array_shortenings[0], term_end_file, doc_end_file)
-    xmlHandler.setIndexes(indexes)
+    xml_handler = XMLHandler()
+    xml_handler.set_json(titles_indexes, language_array_shortenings[0], term_end_file, doc_end_file)
+    xml_handler.set_indexes(indexes)
 
-    parser.setContentHandler(xmlHandler)
+    parser.setContentHandler(xml_handler)
 
     parser.parse(language_file)
 
@@ -150,14 +172,19 @@ def partial_load(start_index, end_index, source_language_shortening, language_sh
         prepare_json_for_indexing('end_regex.json', language_file + '' + addition + '.xml', source_language_shortening,
                                   [language_shortening],
                                   'partial/' + addition + '_' + language_shortening + 'Indexes.json', 'partial/' +
-                                  addition + '_' + language_shortening +'DocIndexes.json')
+                                  addition + '_' + language_shortening + 'DocIndexes.json')
 
-if __name__ == "__main__" :
-    #PROCESSING OF EACH LANGUAGE WIKIPEDIA FILE
-    #prepare_json_for_indexing('end_regex.json', 'D://wiki/cswiki-20200901-pages-articles-multistream.xml', "sk", ["cs"], 'csIndexes.json', 'csDocIndexes.json')
-    #prepare_json_for_indexing('end_regex.json', 'D://wiki/skwiki-20200901-pages-articles-multistream.xml', "sk", ["sk"], 'skIndexes.json', 'skDocIndexes.json')
-    #prepare_json_for_indexing('end_regex.json', 'D://wiki/enwiki-20200901-pages-articles-multistream.xml', "sk", ["en"], 'enIndexes.json', 'enDocIndexes.json')
 
-    #PARTIAL PROCESSING OF FILE - FILE MUST BE TRIMMED
-    #partial_load(0, 206,'sk', 'en', 'D:/wiki/tempexamples')
-    partial_load(43, 206,'sk', 'en', 'D:/wiki/tempexamples')
+# Creates indexes which can be used for tf-idf score creation
+if __name__ == "__main__":
+    # PROCESSING OF EACH LANGUAGE WIKIPEDIA FILE
+    # prepare_json_for_indexing('end_regex.json', 'D://wiki/cswiki-20200901-pages-articles-multistream.xml', "sk",
+    # ["cs"], 'csIndexes.json', 'csDocIndexes.json')
+    prepare_json_for_indexing('end_regex.json', 'D://wiki/skwiki-20200901-pages-articles-multistream.xml', "sk",
+                              ["sk"], 'skIndexes.json', 'skDocIndexes.json')
+    # prepare_json_for_indexing('end_regex.json', 'D://wiki/enwiki-20200901-pages-articles-multistream.xml', "sk",
+    # ["en"], 'enIndexes.json', 'enDocIndexes.json')
+
+    # PARTIAL PROCESSING OF FILE - FILE MUST BE TRIMMED
+    # partial_load(0, 206,'sk', 'en', 'D:/wiki/tempexamples')
+    # partial_load(43, 206, 'sk', 'en', 'D:/wiki/tempexamples')

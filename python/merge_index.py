@@ -1,10 +1,20 @@
 import json
 
 
+# Loads JSON file
+# file      - JSON file which should be loaded
 def load_json(file):
     with open(file, encoding='utf-8') as file_json:
         return json.load(file_json)
 
+
+# Merges term indexes
+# start                 - start file index to merge
+# end                   - end file index to merge
+# path_to_file          - path to files for merging
+# filename              - file name of partial files
+# language_shortening   - language shortening of given files to access dictionary
+# term_end_file         - end file where partial results should be merged
 def merge_term_indexes(start, end, path_to_file, filename, language_shortening, term_end_file):
     first_json = load_json(path_to_file + '' + str(start) + '_' + filename + ".json")
     unique_docs = set()
@@ -12,10 +22,9 @@ def merge_term_indexes(start, end, path_to_file, filename, language_shortening, 
         for doc in first_json[language_shortening][term]['doc'].keys():
             unique_docs.add(doc)
 
-
     for i in range(start + 1, end + 1):
-        json_to_merge = load_json(path_to_file +''+ str(i) + '_' + filename + '.json')
-        print("i "+ str(i))
+        json_to_merge = load_json(path_to_file + '' + str(i) + '_' + filename + '.json')
+        print("i " + str(i))
         for term in json_to_merge[language_shortening]:
             if term not in first_json[language_shortening]:
                 for doc in json_to_merge[language_shortening][term]['doc'].keys():
@@ -35,19 +44,24 @@ def merge_term_indexes(start, end, path_to_file, filename, language_shortening, 
                         first_json[language_shortening][term]['df'] = first_json[language_shortening][term]['df'] + 1
                         unique_docs.add(document)
 
-    first_json[language_shortening +'_docs'] = len(unique_docs)
-
+    first_json[language_shortening + '_docs'] = len(unique_docs)
 
     with open(term_end_file, "w") as f:
         f.write(json.dumps(first_json))  # FINAL DUMPING
 
 
-
+# Merges document lengths
+# start                 - start file index to merge
+# end                   - end file index to merge
+# path_to_file          - path to files for merging
+# filename              - file name of partial files
+# language_shortening   - language shortening of given files to access dictionary
+# term_end_file         - end file where partial results should be merged
 def merge_doc_indexes(start, end, path_to_file, filename, language_shortening, term_end_file):
     first_json = load_json(path_to_file + '' + str(start) + '_' + filename + ".json")
 
     for i in range(start + 1, end + 1):
-        json_to_merge = load_json(path_to_file +''+ str(i) + '_' + filename + '.json')
+        json_to_merge = load_json(path_to_file + '' + str(i) + '_' + filename + '.json')
         print("i " + str(i))
         for docs, frequency in json_to_merge[language_shortening].items():
             if docs in first_json[language_shortening].keys():
@@ -60,7 +74,7 @@ def merge_doc_indexes(start, end, path_to_file, filename, language_shortening, t
         f.write(json.dumps(first_json))  # FINAL DUMPING
 
 
-if __name__ == "__main__" :
+# Merges indexes from partial indexes made on partial files
+if __name__ == "__main__":
     merge_term_indexes(0, 205, 'partial/', 'enIndexes', 'en', 'enIndexes.json')
-    merge_doc_indexes(0,205, 'partial/', 'enDocIndexes', 'en', 'enDocIndexes.json')
-
+    merge_doc_indexes(0, 205, 'partial/', 'enDocIndexes', 'en', 'enDocIndexes.json')
