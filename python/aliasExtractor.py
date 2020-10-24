@@ -68,7 +68,7 @@ class XMLHandler(xml.sax.ContentHandler):
             self.title = content
         elif self.current_data == "text":
             content_to_find = content.lower()
-            results = re.findall(r"^\s*#\s*redirect\s*\[\[(.*)\]\]\s*$", content_to_find)
+            results = re.findall(r"^\s*#\s*redirect\s*\[\[(.*)\]\]\s*$", content_to_find, re.IGNORECASE)
             if len(results) > 0:
                 if self.title in self.titles_aliases.keys():
                     # print("Removing " + self.title + " from titles - its alias")
@@ -127,9 +127,9 @@ def find_lang_aliases(connection_file, wiki_file, end_file, base_language_shorte
 
 # Extracts aliases from page files
 if __name__ == "__main__":
-    # find_lang_aliases("end_regex.json", "D:/wiki/skwiki-20200901-pages-articles-multistream.xml",
-    #                  "sk_aliases_wiki.json", 'sk', 'sk')
-    # find_lang_aliases("end_regex.json", "D:/wiki/enwiki-20200901-pages-articles-multistream.xml",
-    # "en_aliases_wiki.json", 'sk', 'en')
+    find_lang_aliases("end_regex.json", "D:/wiki/skwiki-20200901-pages-articles-multistream.xml",
+                      "sk_aliases_wiki.json", 'sk', 'sk')
+    find_lang_aliases("end_regex.json", "D:/wiki/enwiki-20200901-pages-articles-multistream.xml",
+                      "en_aliases_wiki.json", 'sk', 'en')
     find_lang_aliases("end_regex.json", "D:/wiki/cswiki-20200901-pages-articles-multistream.xml",
                       "cs_aliases_wiki.json", 'sk', 'cs')
