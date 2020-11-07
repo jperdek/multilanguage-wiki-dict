@@ -128,3 +128,5 @@ if __name__ == "__main__":
     search_tf_idf.search("clever substance causa sui")
     print("\nAnother 3:")
     search_tf_idf.search("causa sui")
+    print("\nAnother 4:")
+    search_tf_idf.search("zajímavá metaphysics")

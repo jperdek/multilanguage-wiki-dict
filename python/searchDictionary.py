@@ -14,7 +14,7 @@ class FindInDictionary:
 
     # Initialization for searching
     # array_character_file_trees    -array of character threes one for each language
-    # 
+    # language_shortening -   shortening of base language of character tree
     def init(self, array_character_file_trees, language_array_shortenings):
         for character_file_tree in array_character_file_trees:
             language_shortening = character_file_tree.split('_')[0]
@@ -27,19 +27,27 @@ class FindInDictionary:
         for language_shortening in language_array_shortenings:
             self.stop_words[language_shortening] = self.load_json_file(stop_words_files[language_shortening])
 
+    # Loads JSON file
+    # json_file -   json file path and file name
     @staticmethod
-    def load_json_file(lang_connection_file):
-        with open(lang_connection_file, "r", encoding='utf-8') as file:
+    def load_json_file(json_file):
+        with open(json_file, "r", encoding='utf-8') as file:
             return json.load(file)
 
+    # Preprocess given text according certain language (includes lemmatization)
+    # text -                  text to preprocess
+    # language_shortening -   language of text to preprocess
     def do_text_preprocessing(self, text, language_shortening):
         text = self.majka_lemmatizers[language_shortening].lemmatization_and_loaded_stop_words_removal_in_array(
             textPreprocessing.tokenize_text(text), self.stop_words[language_shortening])
         print(text)
         return textPreprocessing.tokenize_text(text)
 
-    def get_probable_words(self, word_freq_dict):
-        max = 0
+    # Obtains those words with maximal frequency of translated words
+    # word_freq_dict -    dictionary with words as keys and their frequencies as values
+    @staticmethod
+    def get_probable_words(word_freq_dict):
+        maxx = 0
         preferable_word = ""
         more_words = False
 
@@ -47,9 +55,9 @@ class FindInDictionary:
             return ""
 
         for word, freq in word_freq_dict.items():
-            if freq > max:
+            if freq > maxx:
                 preferable_word = word
-                max = freq
+                maxx = freq
                 more_words = False
             elif freq == max:
                 more_words = True
@@ -60,13 +68,17 @@ class FindInDictionary:
         else:
             return preferable_word
 
+    # Finds translations and connects resulting string
+    # text -                          text to translate
+    # initial_language_shortening -   language of text
+    # dest_language_shortenings -     languages of final translation
     def find_foreign_equivalents(self, text, initial_language_shortening, dest_language_shortenings):
         results = dict()
         for language_shortening in dest_language_shortenings:
             results[language_shortening] = ""
 
         tokens = textPreprocessing.tokenize_text(text)
-        # self.do_text_preprocessing(text, initial_language_shortening)
+        #self.do_text_preprocessing(text, initial_language_shortening)
 
         for token in tokens:
             result_part_dict = self.character_trees[initial_language_shortening].find_word_more_languages(
@@ -79,13 +91,18 @@ class FindInDictionary:
             if result != "":
                 print(language_shortening + ": " + result)
 
+    # Finds translations and connects resulting string - extended
+    # (obtains words with the highest frequencies as translations)
+    # text -                          text to translate
+    # initial_language_shortening -   language of text
+    # dest_language_shortenings -     languages of final translation
     def find_foreign_equivalents_ext(self, text, initial_language_shortening, dest_language_shortenings):
         results = dict()
         for language_shortening in dest_language_shortenings:
             results[language_shortening] = ""
 
         tokens = textPreprocessing.tokenize_text(text)
-        # self.do_text_preprocessing(text, initial_language_shortening)
+        #self.do_text_preprocessing(text, initial_language_shortening)
 
         for token in tokens:
             result_part_dict = self.character_trees[initial_language_shortening].find_word_more_languages(
@@ -99,7 +116,10 @@ class FindInDictionary:
             if result != "":
                 print(language_shortening + ": " + result)
 
-    def initialize_majka_lemmatizers(self, languages_array_shortenings):
+    # Initialize majka lemmatizers
+    # language_array_shortenings -   array with language shortenings which are suitable for translation
+    @staticmethod
+    def initialize_majka_lemmatizers(languages_array_shortenings):
         majka_lemmatizers = dict()
 
         for language_shortening in languages_array_shortenings:
@@ -110,12 +130,17 @@ class FindInDictionary:
         return majka_lemmatizers
 
 
-if __name__ == "__main__" :
+# Starts search in dictionary
+if __name__ == "__main__":
     find_in_dictionary = FindInDictionary()
-    # find_in_dictionary.init(['sk_lang_char_tree.json', 'cs_lang_char_tree.json', 'en_lang_char_tree.json'],
+    #find_in_dictionary.init(['sk_lang_char_tree.json', 'cs_lang_char_tree.json', 'en_lang_char_tree.json'],
     #                        ['sk', 'cs', 'en'])
     find_in_dictionary.init(['sk_lang_char_tree_ext.json', 'cs_lang_char_tree_ext.json', 'en_lang_char_tree_ext.json'],
-                            ['sk', 'cs', 'en'])
+                           ['sk', 'cs', 'en'])
     find_in_dictionary.find_foreign_equivalents_ext("Filozof vie vysvetliť metafyziku", 'sk', ['cs', 'en'])
     find_in_dictionary.find_foreign_equivalents_ext("Esperanto nie je jediný jazyk na svete", 'sk', ['cs', 'en'])
     find_in_dictionary.find_foreign_equivalents_ext("Metaphysics changes not only in past years", 'en', ['sk', 'cs'])
+
+    #find_in_dictionary.find_foreign_equivalents("Filozof vie vysvetliť metafyziku", 'sk', ['cs', 'en'])
+    #find_in_dictionary.find_foreign_equivalents("Esperanto nie je jediný jazyk na svete", 'sk', ['cs', 'en'])
+    #find_in_dictionary.find_foreign_equivalents("Metaphysics changes not only in past years", 'en', ['sk', 'cs'])
