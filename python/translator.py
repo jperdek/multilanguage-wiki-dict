@@ -1,5 +1,7 @@
 from googletrans import Translator
 from python import textPreprocessing
+from python.stemming import czechStemmer
+import Stemmer
 import json
 
 # Parse character tree to obtain words and their translation
@@ -10,7 +12,7 @@ class CharacterTreeTranslator:
     # sets base language and character tree
     # character_tree_json_file -   character tree json file
     # base_language -              base language of character tree
-    def __init__(self, character_tree_json_file, base_language):
+    def __init__(self, character_tree_json_file, base_language, lang_shortenings_of_tree):
         self.tree_language_shortening = "sk"
         self.root_node = None
         self.translator = Translator()
@@ -19,6 +21,7 @@ class CharacterTreeTranslator:
         self.load_as_json(character_tree_json_file, base_language)
         self.stop_words = dict()
         self.majka_lemmatizers = dict()
+        self.lang_shortenings_of_tree_set = set(lang_shortenings_of_tree)
 
     # Initialize majka lemmatizers
     # language_array_shortenings -   array with language shortenings which are suitable for translation
@@ -165,6 +168,7 @@ class CharacterTreeTranslator:
 
                 if word_text == "":
                     self.statistics['missed'][character] = self.statistics['missed'][character] + 1
+                    print("MISSED: " + word)
                     continue
 
                 max = 0
@@ -200,6 +204,7 @@ class CharacterTreeTranslator:
 
                 if missed and (translation_text == "" or word_text == ""):
                     self.statistics['missed'][character] = self.statistics['missed'][character] + 1
+                    print("MISSED: " + word)
                     continue
 
                 print(translation_text + " " + word_text)
@@ -212,6 +217,77 @@ class CharacterTreeTranslator:
             else:
                 lifo_stack.append(character)
                 self.parse_lemmatizer_ext(lifo_stack, dictionary, language_array_shortenings)
+                lifo_stack.pop()
+
+    # Parsing of character tree with use of lemmatizer
+    # lifo_stack -        lifo stack which should be used for character retrieval
+    # dictionary_base -   dictionary with characters - child node of some node
+    # language_array_shortenings -   array with language shortenings which are suitable for translation
+    # min_frequency -       minimal frequency of translation
+    def parse_stemmer_ext_min_cs(self, lifo_stack, dictionary_base, language_array_shortenings, min_frequency):
+
+        for character, dictionary in dictionary_base.items():
+            if character in language_array_shortenings:
+                # print("lang: " + character + " " + dictionary )
+                word = ''.join(lifo_stack)
+
+                if not textPreprocessing.validate_word(word):
+                    continue
+
+                word_text = czechStemmer.stemming_on_word(word).lower()
+
+                if not textPreprocessing.validate_word(word_text):
+                    continue
+
+                if word_text == "":
+                    #self.statistics['missed'][character] = self.statistics['missed'][character] + 1
+                    continue
+
+                max = 0
+                array_of_equal = list()
+                for foreign_word, frequency in dictionary.items():
+                    if frequency > max:
+                        max = frequency
+                        array_of_equal = list()
+                        array_of_equal.append(foreign_word)
+                    elif frequency == max:
+                        array_of_equal.append(foreign_word)
+
+                if frequency < min_frequency:
+                    self.statistics['missed'][character] = self.statistics['missed'][character] + 1
+                    continue
+
+                missed = True
+                translation_text = ""
+                if len(array_of_equal) > 1:
+                    self.statistics['negative'][character] = self.statistics['negative'][character] + 1
+                    continue
+
+                if not textPreprocessing.validate_word(array_of_equal[0]):
+                    continue
+
+                translation = self.translator.translate(array_of_equal[0], src=character, dest=self.base_language)
+
+                # print(translation.text + " " + word)
+                translation_text = czechStemmer.stemming_on_word(translation.text).lower()
+
+                if translation_text == "" or not textPreprocessing.validate_word(translation_text):
+                    continue
+
+                if missed and (translation_text == "" or word_text == ""):
+                    # self.statistics['missed'][character] = self.statistics['missed'][character] + 1
+                    continue
+
+                print(translation_text + " " + word_text)
+
+                if translation_text != word_text:
+                    self.statistics['negative'][character] = self.statistics['negative'][character] + 1
+                else:
+                    self.statistics['positive'][character] = self.statistics['positive'][character] + 1
+                    # print(word + " " + dictionary)
+            elif character not in self.lang_shortenings_of_tree_set:
+                lifo_stack.append(character)
+                self.parse_stemmer_ext_min_cs(lifo_stack, dictionary, language_array_shortenings, min_frequency)
                 lifo_stack.pop()
 
     # Parsing of character tree with use of lemmatizer
@@ -274,6 +350,270 @@ class CharacterTreeTranslator:
                 lifo_stack.append(character)
                 self.parse_lemmatizer_ext_min(lifo_stack, dictionary, language_array_shortenings, min_frequency)
                 lifo_stack.pop()
+
+    # Parsing of character tree with use of lemmatizer
+    # lifo_stack -        lifo stack which should be used for character retrieval
+    # dictionary_base -   dictionary with characters - child node of some node
+    # language_array_shortenings -   array with language shortenings which are suitable for translation
+    def parse_stemmer_ext_cs(self, lifo_stack, dictionary_base, language_array_shortenings):
+
+        for character, dictionary in dictionary_base.items():
+            if character in language_array_shortenings:
+                # print("lang: " + character + " " + dictionary )
+                word = ''.join(lifo_stack)
+
+                if not textPreprocessing.validate_word(word):
+                    continue
+
+                word_text = czechStemmer.stemming_on_word(word).lower()
+
+                if not textPreprocessing.validate_word(word_text):
+                    continue
+
+                if word_text == "":
+                    self.statistics['missed'][character] = self.statistics['missed'][character] + 1
+                    print("MISSED: " + word)
+                    continue
+
+                max = 0
+                array_of_equal = list()
+                for foreign_word, frequency in dictionary.items():
+                    if frequency > max:
+                        max = frequency
+                        array_of_equal = list()
+                        array_of_equal.append(foreign_word)
+                    elif frequency == max:
+                        array_of_equal.append(foreign_word)
+
+                missed = True
+                translation_text = ""
+                if array_of_equal is not None:
+                    for found_word in array_of_equal:
+                        if found_word is None:
+                            continue
+                        # print(character)
+                        # print(str(frequency) + " " + str(found_word))
+                        if not textPreprocessing.validate_word(found_word):
+                            continue
+
+                        translation = self.translator.translate(found_word, src=character, dest=self.base_language)
+                        # print(translation.text + " " + word)
+                        translation_text = czechStemmer.stemming_on_word(translation.text).lower()
+
+                        if not textPreprocessing.validate_word(translation_text):
+                            continue
+
+                        if missed and (translation_text == "" or word_text == ""):
+                            continue
+                        if translation_text == word_text:
+                            break
+                        else:
+                            missed = False
+
+                if missed and (translation_text == "" or word_text == ""):
+                    self.statistics['missed'][character] = self.statistics['missed'][character] + 1
+                    print("MISSED: " + word)
+                    continue
+
+                print(translation_text + " " + word_text)
+
+                if translation_text != word_text:
+                    self.statistics['negative'][character] = self.statistics['negative'][character] + 1
+                else:
+                    self.statistics['positive'][character] = self.statistics['positive'][character] + 1
+                    # print(word + " " + dictionary)
+
+            elif character not in self.lang_shortenings_of_tree_set:
+                lifo_stack.append(character)
+                self.parse_stemmer_ext_cs(lifo_stack, dictionary, language_array_shortenings)
+                lifo_stack.pop()
+
+    # Parsing of character tree with use of lemmatizer
+    # lifo_stack -        lifo stack which should be used for character retrieval
+    # dictionary_base -   dictionary with characters - child node of some node
+    # language_array_shortenings -   array with language shortenings which are suitable for translation
+    def parse_stemmer_ext_snowball(self, lifo_stack, dictionary_base, language_array_shortenings, stemmers):
+
+        for character, dictionary in dictionary_base.items():
+            if character in language_array_shortenings:
+                # print("lang: " + character + " " + dictionary )
+                word = ''.join(lifo_stack)
+
+                if not textPreprocessing.validate_word(word):
+                    continue
+
+                word_text = stemmers[character].stemWord(word).lower()
+
+                if not textPreprocessing.validate_word(word_text):
+                    continue
+
+                if word_text == "":
+                    self.statistics['missed'][character] = self.statistics['missed'][character] + 1
+                    print("MISSED: " + word)
+                    continue
+
+                max = 0
+                array_of_equal = list()
+                for foreign_word, frequency in dictionary.items():
+                    if frequency > max:
+                        max = frequency
+                        array_of_equal = list()
+                        array_of_equal.append(foreign_word)
+                    elif frequency == max:
+                        array_of_equal.append(foreign_word)
+
+                missed = True
+                translation_text = ""
+                if array_of_equal is not None:
+                    for found_word in array_of_equal:
+                        if found_word is None:
+                            continue
+                        # print(character)
+                        # print(str(frequency) + " " + str(found_word))
+                        if not textPreprocessing.validate_word(found_word):
+                            continue
+
+                        translation = self.translator.translate(found_word, src=character, dest=self.base_language)
+                        # print(translation.text + " " + word)
+                        translation_text = stemmers[character].stemWord(translation_text).lower()
+
+                        if not textPreprocessing.validate_word(translation_text):
+                            continue
+
+                        if missed and (translation_text == "" or word_text == ""):
+                            continue
+                        if translation_text == word_text:
+                            break
+                        else:
+                            missed = False
+
+                if missed and (translation_text == "" or word_text == ""):
+                    self.statistics['missed'][character] = self.statistics['missed'][character] + 1
+                    print("MISSED: " + word)
+                    continue
+
+                print(translation_text + " " + word_text)
+
+                if translation_text != word_text:
+                    self.statistics['negative'][character] = self.statistics['negative'][character] + 1
+                else:
+                    self.statistics['positive'][character] = self.statistics['positive'][character] + 1
+                    # print(word + " " + dictionary)
+
+            elif character not in self.lang_shortenings_of_tree_set:
+                lifo_stack.append(character)
+                self.parse_stemmer_ext_cs(lifo_stack, dictionary, language_array_shortenings)
+                lifo_stack.pop()
+
+    # Parsing of character tree with use of lemmatizer
+    # lifo_stack -        lifo stack which should be used for character retrieval
+    # dictionary_base -   dictionary with characters - child node of some node
+    # language_array_shortenings -   array with language shortenings which are suitable for translation
+    # min_frequency -       minimal frequency of translation
+    def parse_stemmer_ext_min_snowball(self, lifo_stack, dictionary_base, language_array_shortenings, min_frequency,
+                                       stemmers):
+
+        for character, dictionary in dictionary_base.items():
+            if character in language_array_shortenings:
+                # print("lang: " + character + " " + dictionary )
+                word = ''.join(lifo_stack)
+
+                if not textPreprocessing.validate_word(word):
+                    continue
+
+                word_text = stemmers[character].stemWord(word).lower()
+
+                if not textPreprocessing.validate_word(word_text):
+                    continue
+
+                if word_text == "":
+                    # self.statistics['missed'][character] = self.statistics['missed'][character] + 1
+                    continue
+
+                max = 0
+                array_of_equal = list()
+                for foreign_word, frequency in dictionary.items():
+                    if frequency > max:
+                        max = frequency
+                        array_of_equal = list()
+                        array_of_equal.append(foreign_word)
+                    elif frequency == max:
+                        array_of_equal.append(foreign_word)
+
+                if frequency < min_frequency:
+                    self.statistics['missed'][character] = self.statistics['missed'][character] + 1
+                    continue
+
+                missed = True
+                translation_text = ""
+                if len(array_of_equal) > 1:
+                    self.statistics['negative'][character] = self.statistics['negative'][character] + 1
+                    continue
+
+                if not textPreprocessing.validate_word(array_of_equal[0]):
+                    continue
+
+                translation = self.translator.translate(array_of_equal[0], src=character, dest=self.base_language)
+
+                # print(translation.text + " " + word)
+                translation_text = stemmers[character].stemWord(translation_text).lower()
+
+                if translation_text == "" or not textPreprocessing.validate_word(translation_text):
+                    continue
+
+                if missed and (translation_text == "" or word_text == ""):
+                    # self.statistics['missed'][character] = self.statistics['missed'][character] + 1
+                    continue
+
+                print(translation_text + " " + word_text)
+
+                if translation_text != word_text:
+                    self.statistics['negative'][character] = self.statistics['negative'][character] + 1
+                else:
+                    self.statistics['positive'][character] = self.statistics['positive'][character] + 1
+                    # print(word + " " + dictionary)
+            elif character not in self.lang_shortenings_of_tree_set:
+                lifo_stack.append(character)
+                self.parse_stemmer_ext_min_cs(lifo_stack, dictionary, language_array_shortenings, min_frequency)
+                lifo_stack.pop()
+
+    # Manages parsing and collecting of statistical data - extended (contains frequences of translated words)
+    # min_occurences -   minimal frequency of translation
+    def get_translation_and_statistics_parse_stemming_ext_cs(self, min_occurences=0):
+        lifo_stack = []
+        language_array_shortenings = ['cs']
+
+        self.load_stop_words(language_array_shortenings)
+        self.prepare_statistic_structures(language_array_shortenings)
+
+        if min_occurences < 2:
+            self.parse_stemmer_ext_cs(lifo_stack, self.root_node, language_array_shortenings)
+        else:
+            print("SUCCESS")
+            self.parse_stemmer_ext_min_cs(lifo_stack, self.root_node, language_array_shortenings, min_occurences)
+
+        self.print_statistics(language_array_shortenings)
+
+    # Manages parsing and collecting of statistical data - extended (contains frequences of translated words)
+    # language_array_shortenings -   array with language shortenings which are suitable for translation
+    def get_translation_and_statistics_parse_stemming_ext_snowball(self, snowball_language_shortenning,
+                                                                   min_occurences=0):
+        lifo_stack = []
+        stemmers = dict()
+        for language_shortening in snowball_language_shortenning:
+            stemmers[language_shortening] = Stemmer.Stemmer(language_shortening)
+
+        self.load_stop_words(snowball_language_shortenning)
+        self.prepare_statistic_structures(snowball_language_shortenning)
+
+        if min_occurences < 2:
+            self.parse_stemmer_ext_snowball(lifo_stack, self.root_node, snowball_language_shortenning, stemmers)
+        else:
+            print("SUCCESS")
+            self.parse_stemmer_ext_min_snowball(lifo_stack, self.root_node, snowball_language_shortenning,
+                                                min_occurences, stemmers)
+
+        self.print_statistics(snowball_language_shortenning)
 
     # Manages parsing and collecting of statistical data - extended (contains frequences of translated words)
     # language_array_shortenings -   array with language shortenings which are suitable for translation
@@ -356,16 +696,26 @@ class CharacterTreeTranslator:
         with open(json_file, "r", encoding='utf-8') as file:
             return json.load(file)
 
+    def translate_test(self):
+        translation = self.translator.translate('luděk', src='cs', dest='sk')
+        print(translation.text)
+
 
 # Collects statistic information about character tree
 if __name__ == "__main__":
-     # character_tree = CharacterTreeTranslator('sk_lang_char_tree.json', 'sk')
-     # character_tree.get_translation_and_statistics_parse(['en', 'cs'])
-     # character_tree.get_translation_and_statistics_parse_lemmatizer(['en', 'cs'])
+    # character_tree = CharacterTreeTranslator('sk_lang_char_tree.json', 'sk', ['en', 'cs', 'sk'])
+    # character_tree.get_translation_and_statistics_parse(['en', 'cs'])
+    # character_tree.get_translation_and_statistics_parse_lemmatizer(['en', 'cs'])
 
-     character_tree = CharacterTreeTranslator('sk_lang_char_tree_ext.json', 'sk')
-     # character_tree.get_translation_and_statistics_parse_ext(['en', 'cs'])
-     character_tree.get_translation_and_statistics_parse_ext(['en', 'cs'], 3)
-     # character_tree.get_translation_and_statistics_parse_ext(['en', 'cs'], 5)
-     # character_tree.get_translation_and_statistics_parse_ext(['en', 'cs'], 7)
+    # character_tree = CharacterTreeTranslator('sk_lang_char_tree_ext.json', 'sk', ['en', 'cs', 'sk'])
+    # character_tree.get_translation_and_statistics_parse_ext(['en', 'cs'])
+    # character_tree.get_translation_and_statistics_parse_ext(['en', 'cs'], 3)
+    # character_tree.get_translation_and_statistics_parse_ext(['en', 'cs'], 5)
+    # character_tree.get_translation_and_statistics_parse_ext(['en', 'cs'], 7)
+
+    character_tree = CharacterTreeTranslator('sk_lang_char_tree_ext.json', 'sk', ['en', 'cs', 'sk'])
+    # character_tree.translate_test()
+    # character_tree.get_translation_and_statistics_parse_stemming_ext_cs(3)
+    # character_tree.get_translation_and_statistics_parse_stemming_ext_cs()
+    character_tree.get_translation_and_statistics_parse_stemming_ext_snowball(['en'], 3)
 

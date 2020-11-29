@@ -10,6 +10,7 @@ import pickle
 import json
 from majka import Majka
 import sys
+import re
 
 
 # Separate array with spaces
@@ -174,3 +175,19 @@ def create_tfidf_vectorizer(file_name, stop_words_language):
 # data_for_tfidf        - data which should be vectorized by tf-idf
 def vectorize_ti_idf(tfidf_vectiorizer, data_for_tfidf):
     return tfidf_vectiorizer.fit_transform(data_for_tfidf)
+
+
+# Validates word if is valid word
+# word  -    word which should be validated
+def validate_word(word):
+    #print(len(re.findall(r"[,;'@#$():\\!~*&^%+_%<>?ă©]", "jiljă­")))
+    if len(re.findall("[0-9]", word)) > 0:
+        return False
+    elif len(re.findall(r"[,;'@#$():\\!~*&^%+_%<>?ă©]", word)) > 0:
+        return False
+    elif len(re.findall(r"[\s]", word)) > 0:
+        return False
+    elif len(re.findall(r"[-­ˇ]", word)) > 0:
+        return False
+    else:
+        return True
