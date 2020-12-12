@@ -1,0 +1,14 @@
+python preprocessJSON.py
+
+hadoop dfs -copyFromLocal C:\Users\perdek\PycharmProjects\multilanguageWikiDict\python\simpleData.txt /simpledata1.txt
+
+pig -x mapreduce map.pig
+hdfs dfs -get hdfs://localhost:9000/table/part-m-00000 C:\Users\perdek\Desktop\data.txt
+
+
+type data.txt | python mapper.py | python reducer.py
+python verify.py
+
+
+hadoop dfs -copyFromLocal "C:\Users\perdek\Desktop\node js tutorial\pig\projekt\dataFinal.txt" /user/perdek/dataFinal.txt
+hadoop jar hadoop-streaming-2.7.2.jar -mapper "python mapper.py" -reducer "python reducer.py" -file mapper.py -file reducer.py -input "dataFinal.txt" -output "/table100" 

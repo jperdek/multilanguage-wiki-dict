@@ -240,7 +240,7 @@ class CharacterTreeTranslator:
                     continue
 
                 if word_text == "":
-                    #self.statistics['missed'][character] = self.statistics['missed'][character] + 1
+                    self.statistics['missed'][character] = self.statistics['missed'][character] + 1
                     continue
 
                 max = 0
@@ -254,7 +254,7 @@ class CharacterTreeTranslator:
                         array_of_equal.append(foreign_word)
 
                 if frequency < min_frequency:
-                    self.statistics['missed'][character] = self.statistics['missed'][character] + 1
+                    # self.statistics['missed'][character] = self.statistics['missed'][character] + 1
                     continue
 
                 missed = True
@@ -275,7 +275,7 @@ class CharacterTreeTranslator:
                     continue
 
                 if missed and (translation_text == "" or word_text == ""):
-                    # self.statistics['missed'][character] = self.statistics['missed'][character] + 1
+                    self.statistics['missed'][character] = self.statistics['missed'][character] + 1
                     continue
 
                 print(translation_text + " " + word_text)
